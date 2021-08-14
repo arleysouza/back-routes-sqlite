@@ -23,6 +23,7 @@ Os dados são persistidos nas seguintes tabelas.
 
 ## Estrutura do projeto
 1. Cada pasta possui um arquivo `index.js`. Nele são exportados os recursos dos demais módulos da pasta, desta forma, basta importar o arquivo `index.js` para importar todos os recursos exportados pelos módulos da pasta.
+
 2. O arquivo `index.js` na raiz da pasta `src` é usado para criar o servidor web e direcionar para as rotas definidas no arquivo `/routes/index.js`.
 ```javascript
 const express = require("express");
@@ -45,3 +46,60 @@ app.use( (req, res) => {
 });
 ```
 
+3. O arquivo `/routes/index.js` é usado para direcionar para as rotas definidas nos arquivos `/routes/gasto.js` e `/routes/usuario.js`.
+```javascript
+const router = require("express").Router();
+
+const usuarioRoute = require("./usuario");
+const gastoRoute = require("./gasto");
+
+router.use("/usuario", usuarioRoute);
+router.use("/gasto", gastoRoute);
+
+router.use( (req, res) => {
+    res.status(400).json({error:['Operação desconhecida']});
+})
+
+module.exports = router;
+```
+
+4. O arquivo `/routes/index.js` é usado para direcionar para as rotas definidas nos arquivos `/routes/gasto.js` e `/routes/usuario.js`.
+```javascript
+const router = require("express").Router();
+const {UsuarioController} = require("../controllers");
+const { authMiddleware } = require("../middlewares");
+const { create, login, updatemail, updatesenha } = new UsuarioController();
+
+// essas rotas não precisam de autorização
+router.post("/create", create);
+router.get("/login", login);
+
+// as rotas a partir desse ponto estão bloqueados pela autorização
+router.use(authMiddleware);
+router.put("/update/mail", updatemail);
+router.put("/update/senha", updatesenha);
+
+router.use( (req, res) => {
+    res.status(400).json({error:['Operação desconhecida com o usuário']});
+})
+
+module.exports = router;
+```
+
+5. Nos arquivos `/models/gasto.js` e `/models/usuario.js` são definidos os modelos que representam as tabelas no BD. O relacionamento de chave-estrangeira foi definido no arquivo `/models/index.js`:
+```javascript
+UsuarioModel.hasMany(GastoModel, {
+  foreignKey: {
+    name: "idusuario",
+    allowNull: false,
+  },
+  sourceKey: "idusuario",
+  onDelete: "cascade",
+  onUpdate: "cascade",
+  hooks: true, //usado para forçar o cascade no onDelete
+});
+GastoModel.belongsTo(UsuarioModel, {
+  foreignKey: "idusuario",
+  targetKey: "idusuario",
+});
+```
