@@ -86,7 +86,7 @@ router.use( (req, res) => {
 module.exports = router;
 ```
 
-5. Nos arquivos `/models/gasto.js` e `/models/usuario.js` são definidos os modelos que representam as tabelas no BD. O relacionamento de chave-estrangeira foi definido no arquivo `/models/index.js`:
+5. Nos arquivos `/models/gasto.js` e `/models/usuario.js` são definidos os modelos que representam as tabelas no BD. O relacionamento de chave-estrangeira foi definido no arquivo `/models/index.js` e a instrução `database.sync()` é usada para forçar as tabelas a serem criadas no SGBD caso elas não existam.
 ```javascript
 UsuarioModel.hasMany(GastoModel, {
   foreignKey: {
@@ -102,4 +102,12 @@ GastoModel.belongsTo(UsuarioModel, {
   foreignKey: "idusuario",
   targetKey: "idusuario",
 });
+```
+
+6. Cada rota direciona para um método das classes `GastoController` e `UsuarioController` que estão nos arquivos da pasta `/controllers`. O código a seguir existe em cada um dos métodos que requerem a identificação do usuário. Os dados do usuário são mantidos em um token e a decodificação desse token é feita no arquivo `/middlewares/authMiddleware.js`.
+```javascript
+const token = await getToken(req);
+if (!token || !token.idusuario) {
+    return res.status(401).json({ error: ["Efetue o login para continuar"] });
+}
 ```
